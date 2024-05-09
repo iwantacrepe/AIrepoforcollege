@@ -1,4 +1,3 @@
-import copy
 def is_goal(state):
     goal_state = (('A', None), ('B', 'A'), ('C', 'B'))
     return state == goal_state
@@ -6,64 +5,47 @@ def is_goal(state):
 def get_children(state):
     children = []
     for i, (block, _) in enumerate(state):
-        new_state = copy.deepcopy(state)
+        new_state = list(state)
         new_state[i] = (block, None)
         children.append(tuple(new_state))
-    
-        for j, (other_block, other_base) in enumerate(state):
-            if i != j and other_base is None:
-                new_state = copy.deepcopy(state)
+
+        for j, (other_block, _) in enumerate(state):
+            if i != j and other_block is not None:
+                new_state = list(state)
                 new_state[i] = (block, other_block)
+                new_state[j] = (other_block, None)
                 children.append(tuple(new_state))
     return children
 
-def depth_limited_search(state, depth):
-    stack = [(state, None, 0)]  # Stack holds tuples of (state, parent state, current depth)
-    explored = {}
-    parents = {tuple(state): None}
+def depth_limited_search(initial_state, limit):
+    stack = [(initial_state, 0)]  # Stack stores tuples of (state, current depth)
+    visited = set()
 
     while stack:
-        current_state, parent, current_depth = stack.pop()
+        state, depth = stack.pop()
+        if depth > limit:
+            continue  # Skip processing if the depth exceeds the limit
 
-        if tuple(current_state) in explored and explored[tuple(current_state)] <= current_depth:
-            continue
+        visited.add(state)
         
-        explored[tuple(current_state)] = current_depth
-        parents[tuple(current_state)] = parent
+        print("Current state:", state, "at depth:", depth)
 
-        if is_goal(current_state):
-            path = []
-            step = current_state
-            while step:
-                path.append(step)
-                step = parents[tuple(step)]
-            path.reverse()
-            return path
+        if is_goal(state):
+            return state
 
-        if current_depth < depth:
-            for child in get_children(current_state):
-                child_tuple = tuple(child)
-                if child_tuple not in explored or explored[child_tuple] > current_depth + 1:
-                    stack.append((child, current_state, current_depth + 1))
+        if depth < limit:  # Only add children to stack if within depth limit
+            for child in get_children(state):
+                if child not in visited:
+                    stack.append((child, depth + 1))
 
-    return None  # If no solution is found within the given depth
-
-def solve(initial_state, max_depth):
-    for depth in range(max_depth + 1):
-        print("Searching at depth:", depth)
-        solution = depth_limited_search(initial_state, depth)
-        if solution:
-            return solution
-    return None
+    return None  
 
 initial_state = (('A', None), ('B', None), ('C', 'B'))
-max_depth = 3
+depth_limit = 3  # Define a maximum depth limit
 
-solution = solve(initial_state, max_depth)
+solution = depth_limited_search(initial_state, depth_limit)
 
 if solution:
-    print("Solution found:")
-    for state in solution:
-        print(state)
+    print("Solution found:", solution)
 else:
-    print("No solution found within the maximum depth.")
+    print("No solution found.")
